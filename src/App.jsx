@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 function App() {
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
-  const [cart, setCart] = useState(
+  const [cart, setCart] = useState(   
     JSON.parse(localStorage.getItem("cart")) || []
   );
 
@@ -14,18 +14,20 @@ function App() {
 
   const navigate = useNavigate();
 
+  
   useEffect(() => {
     fetch("https://www.themealdb.com/api/json/v1/1/filter.php?c=Dessert")
       .then((res) => res.json())
       .then((data) => {
         if (!data.meals) return;
 
+        
         const savedPrices =
           JSON.parse(localStorage.getItem("adminPrices")) || {};
-
         const hiddenProducts =
           JSON.parse(localStorage.getItem("hiddenProducts")) || [];
 
+        
         const productsWithPrice = data.meals
           .filter((p) => !hiddenProducts.includes(p.idMeal))
           .map((p) => ({
@@ -39,9 +41,55 @@ function App() {
       });
   }, []);
 
+
+  
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
+
+
+
+  
+  const sendOrder = async () => {
+    if (cart.length === 0) {
+      alert("Корзина пуста");
+      return;
+    }
+
+    const order = {
+      user: user?.email || "Гость",
+      items: cart,
+      total: cart.reduce((sum, i) => sum + i.price * i.quantity, 0),
+      date: new Date().toISOString(),
+    };
+
+    try {
+      const res = await fetch(
+        "https://jsonplaceholder.typicode.com/posts",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(order),
+        }
+      );
+
+      const data = await res.json();
+
+      console.log("Ответ сервера:", data);
+      alert("Заказ оформлен!");
+
+      setCart([]); 
+    } catch (err) {
+      console.error(err);
+      alert("Ошибка при отправке");
+    }
+  };
+
+
+
+
 
   const addToCart = (product) => {
     const exists = cart.find((item) => item.id === product.idMeal);
@@ -93,6 +141,11 @@ function App() {
             Корзина ({cart.reduce((s, i) => s + i.quantity, 0)})
           </button>
 
+          
+          <button onClick={sendOrder}>
+            Оформить заказ
+          </button>
+
           {user ? (
             <>
               <span>{user.email}</span>
@@ -121,7 +174,7 @@ function App() {
 
               <button
                 onClick={(e) => {
-                  e.stopPropagation(); 
+                  e.stopPropagation();
                   addToCart(product);
                 }}
               >
